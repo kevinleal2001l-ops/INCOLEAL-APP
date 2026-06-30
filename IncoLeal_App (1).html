@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Inco Leal · Control Operacional</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0D0F14;
+  --surface:  #151820;
+  --card:     #1C2030;
+  --border:   #252A3A;
+  --accent:   #E94560;
+  --gold:     #F5A623;
+  --green:    #2ECC71;
+  --blue:     #3A86FF;
+  --text:     #F0F2F8;
+  --muted:    #6B7280;
+  --navy:     #0F3460;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; padding-bottom: 70px; }
+nav { position: sticky; top: 0; z-index: 100; background: rgba(13,15,20,.92); backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: 0 16px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.nav-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -.3px; color: var(--text); }
+.nav-brand span { color: var(--accent); }
+.nav-status { font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+.status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.status-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.tabs { display: flex; gap: 4px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex-shrink: 0; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s; white-space: nowrap; }
+.tab.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+.tab:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+.date-selector { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.date-selector input { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; flex: 1; }
+.date-nav-btn { background: var(--card); border: 1px solid var(--border); border-radius: 8px; width: 34px; height: 34px; color: var(--text); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.date-nav-btn:hover { border-color: var(--accent); }
+.page { display: none; padding: 16px; }
+.page.active { display: block; }
+.kpi-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; position: relative; overflow: hidden; }
+.kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+.kpi.ventas::before  { background: var(--blue); }
+.kpi.utilidad::before { background: var(--green); }
+.kpi.gastos::before  { background: var(--accent); }
+.kpi.compras::before { background: var(--gold); }
+.kpi-label { font-size: 10px; color: var(--muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.kpi-value { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; line-height: 1; }
+.kpi.ventas  .kpi-value { color: var(--blue); }
+.kpi.utilidad .kpi-value { color: var(--green); }
+.kpi.gastos  .kpi-value { color: var(--accent); }
+.kpi.compras .kpi-value { color: var(--gold); }
+.kpi-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+.section-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.action-btn { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 14px; cursor: pointer; transition: all .2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.action-btn:hover, .action-btn:active { transform: scale(.97); border-color: var(--accent); }
+.action-btn.compra { border-top: 3px solid var(--gold); }
+.action-btn.gasto  { border-top: 3px solid var(--accent); }
+.action-btn.proveedor { border-top: 3px solid #9B59B6; }
+.action-btn.ventas { border-top: 3px solid var(--blue); grid-column: span 2; }
+.action-icon { font-size: 28px; line-height: 1; }
+.action-label { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
+.action-sub { font-size: 11px; color: var(--muted); }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 200; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px 20px 0 0; padding: 20px 20px 32px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; animation: slideUp .25s ease; }
+@keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 16px; }
+.modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
+.form-input, .form-select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--text); outline: none; transition: border-color .2s; -webkit-appearance: none; }
+.form-input:focus, .form-select:focus { border-color: var(--accent); }
+.form-select option { background: var(--card); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.price-preview { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.price-preview-label { font-size: 12px; color: var(--muted); }
+.price-preview-value { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; color: var(--green); }
+.btn-save { width: 100%; background: var(--accent); border: none; border-radius: 12px; padding: 16px; font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer; transition: all .2s; margin-top: 8px; letter-spacing: .3px; }
+.btn-save:hover { opacity: .88; transform: translateY(-1px); }
+.btn-save.green { background: var(--green); }
+.btn-save.blue  { background: var(--blue); }
+.btn-save.purple { background: #9B59B6; }
+.btn-cancel { width: 100%; background: transparent; border: 1px solid var(--border); border-radius: 12px; padding: 13px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--muted); cursor: pointer; margin-top: 8px; transition: all .2s; }
+.btn-cancel:hover { border-color: var(--muted); color: var(--text); }
+.btn-small { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--text); cursor: pointer; }
+.btn-small:hover { border-color: var(--accent); }
+.btn-small.danger { color: var(--accent); }
+.feed { display: flex; flex-direction: column; gap: 8px; }
+.feed-item { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; animation: fadeIn .3s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.feed-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.feed-icon.compra  { background: rgba(245,166,35,.15); }
+.feed-icon.gasto   { background: rgba(233,69,96,.15); }
+.feed-icon.venta   { background: rgba(58,134,255,.15); }
+.feed-icon.proveedor { background: rgba(155,89,182,.15); }
+.feed-body { flex: 1; min-width: 0; }
+.feed-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.feed-amount { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.feed-amount.compra  { color: var(--gold); }
+.feed-amount.gasto   { color: var(--accent); }
+.feed-amount.venta   { color: var(--blue); }
+.feed-amount.proveedor { color: #9B59B6; }
+.feed-delete { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px; flex-shrink: 0; }
+.feed-delete:hover { color: var(--accent); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 13px; }
+.empty-state .emoji { font-size: 32px; margin-bottom: 8px; }
+.ventas-summary { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+.ventas-header { background: var(--surface); padding: 10px 14px; display: grid; grid-template-columns: 1fr 60px 80px; gap: 8px; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+.ventas-row { padding: 10px 14px; display: grid; grid-template-columns: 1fr 60px 80px; gap: 8px; border-top: 1px solid var(--border); font-size: 12px; align-items: center; }
+.ventas-row:nth-child(even) { background: rgba(255,255,255,.02); }
+.ventas-prod { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ventas-qty  { text-align: center; color: var(--muted); }
+.ventas-total { text-align: right; font-weight: 600; color: var(--blue); font-family: 'Syne', sans-serif; font-size: 11px; }
+.upload-zone { border: 2px dashed var(--border); border-radius: 14px; padding: 30px 20px; text-align: center; cursor: pointer; transition: all .2s; position: relative; }
+.upload-zone:hover, .upload-zone.drag { border-color: var(--blue); background: rgba(58,134,255,.05); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-icon { font-size: 36px; margin-bottom: 8px; }
+.upload-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--muted); }
+.vend-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 16px; }
+.vend-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+.vend-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin-bottom: 10px; }
+.vend-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vend-stat { text-align: center; }
+.vend-stat-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+.vend-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.report-block { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.report-block-title { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 12px; }
+.report-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.report-row:last-child { border-bottom: none; }
+.report-row.total { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; padding-top: 12px; margin-top: 4px; border-top: 1px solid var(--border); border-bottom: none; }
+.report-row.total .r-val { color: var(--green); }
+.report-row.negativo .r-val { color: var(--accent); }
+.r-lbl { color: var(--muted); }
+.r-val { font-weight: 600; font-family: 'Syne', sans-serif; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: #fff; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; z-index: 999; transition: transform .3s ease; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--accent); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.badge-green { background: rgba(46,204,113,.2); color: var(--green); }
+.badge-gold  { background: rgba(245,166,35,.2); color: var(--gold); }
+.badge-red   { background: rgba(233,69,96,.2);  color: var(--accent); }
+.badge-purple{ background: rgba(155,89,182,.2); color: #9B59B6; }
+.margen-bar { height: 4px; background: var(--border); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.margen-fill { height: 100%; border-radius: 2px; background: var(--green); transition: width .5s ease; }
+.prod-config-row { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; }
+.prod-config-name { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.prod-config-inputs { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+.prod-config-inputs input { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif; }
+.prod-margen-tag { font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 8px; text-align: center; }
+.search-box { width: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; margin-bottom: 14px; outline: none; }
+.search-box:focus { border-color: var(--accent); }
+.proveedor-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+.proveedor-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.proveedor-name { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; }
+.proveedor-debe { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--gold); }
+.factura-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid var(--border); font-size: 12px; }
+.factura-info { display: flex; flex-direction: column; gap: 2px; }
+.factura-concepto { font-weight: 500; }
+.factura-fecha { color: var(--muted); font-size: 10px; }
+.factura-monto { font-family: 'Syne', sans-serif; font-weight: 700; }
+.vence-alert { color: var(--accent); font-weight: 700; }
+.vence-soon { color: var(--gold); font-weight: 700; }
+@media (min-width: 480px) { .kpi-strip { grid-template-columns: repeat(4, 1fr); } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">Inco<span>Leal</span></div>
+  <div class="nav-status" id="syncStatus">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Conectando...</span>
+  </div>
+</nav>
+
+<div class="date-selector">
+  <button class="date-nav-btn" onclick="changeDate(-1)">‹</button>
+  <input type="date" id="currentDate" onchange="onDateChange()">
+  <button class="date-nav-btn" onclick="changeDate(1)">›</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPage('dashboard')">🏠 Inicio</button>
+  <button class="tab" onclick="showPage('ventas')">📊 Ventas</button>
+  <button class="tab" onclick="showPage('inventario')">📦 Inventario</button>
+  <button class="tab" onclick="showPage('gastos-page')">💸 Gastos</button>
+  <button class="tab" onclick="showPage('proveedores')">🏭 Proveedores</button>
+  <button class="tab" onclick="showPage('config')">⚙️ Precios</button>
+  <button class="tab" onclick="showPage('reporte')">📋 Reporte</button>
+</div>
+
+<div class="page active" id="page-dashboard">
+  <div class="kpi-strip" style="margin-top:16px;">
+    <div class="kpi ventas"><div class="kpi-label">Ventas Hoy</div><div class="kpi-value" id="kpi-ventas">$0</div><div class="kpi-sub" id="kpi-ventas-uds">0 unidades</div></div>
+    <div class="kpi utilidad"><div class="kpi-label">Utilidad Est.</div><div class="kpi-value" id="kpi-utilidad">$0</div><div class="kpi-sub" id="kpi-margen">0% margen</div></div>
+    <div class="kpi gastos"><div class="kpi-label">Gastos Hoy</div><div class="kpi-value" id="kpi-gastos">$0</div><div class="kpi-sub" id="kpi-gastos-n">0 registros</div></div>
+    <div class="kpi compras"><div class="kpi-label">Compras Hoy</div><div class="kpi-value" id="kpi-compras">$0</div><div class="kpi-sub" id="kpi-compras-n">0 registros</div></div>
+  </div>
+
+  <div class="section-title">Acciones Rápidas</div>
+  <div class="action-grid">
+    <div class="action-btn compra" onclick="openModal('modal-compra')">
+      <div class="action-icon">🛒</div><div class="action-label">Registrar Compra</div><div class="action-sub">Entrada de bodega</div>
+    </div>
+    <div class="action-btn gasto" onclick="openModal('modal-gasto')">
+      <div class="action-icon">💸</div><div class="action-label">Registrar Gasto</div><div class="action-sub">Operacional</div>
+    </div>
+    <div class="action-btn proveedor" onclick="openModal('modal-proveedor')" style="grid-column: span 2;">
+      <div class="action-icon">🏭</div><div class="action-label">Registrar Factura de Proveedor</div><div class="action-sub">Cuentas por pagar</div>
+    </div>
+    <div class="action-btn ventas" onclick="openModal('modal-ventas')">
+      <div class="action-icon">📊</div><div class="action-label">Cargar Ventas del Día</div><div class="action-sub">Sube el archivo de Ruttas App</div>
+    </div>
+  </div>
+
+  <div id="alerta-cxp" style="display:none;margin-bottom:16px;"></div>
+
+  <div class="section-title">Movimientos del Día</div>
+  <div class="feed" id="feed-dashboard"><div class="empty-state"><div class="emoji">📭</div><div>Sin movimientos.<br>Usa los botones de arriba para registrar.</div></div></div>
+</div>
+
+<div class="page" id="page-ventas">
+  <div style="margin-top:16px;">
+    <div class="section-title">Resumen por Vendedor</div>
+    <div class="vend-grid" id="vend-grid"><div class="empty-state"><div class="emoji">📤</div><div>Carga el archivo de Ruttas para ver ventas.</div></div></div>
+    <div class="section-title">Top Productos del Día</div>
+    <div class="ventas-summary">
+      <div class="ventas-header"><span>Producto</span><span style="text-align:center">Uds.</span><span style="text-align:right">Total</span></div>
+      <div id="ventas-productos-list"><div class="empty-state" style="padding:20px">Sin datos cargados.</div></div>
+    </div>
+    <button class="btn-save blue" onclick="openModal('modal-ventas')">📤 Cargar nuevo archivo</button>
+  </div>
+</div>
+
+<div class="page" id="page-inventario">
+  <div style="margin-top:16px;">
+    <button class="btn-save green" style="margin-bottom:16px;" onclick="openModal('modal-compra')">🛒 + Registrar Compra / Entrada</button>
+    <div class="section-title">Historial de Compras del Día</div>
+    <div class="feed" id="feed-compras"><div class="empty-state"><div class="emoji">📦</div><div>Sin compras registradas.</div></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-gastos-page">
+  <div style="margin-top:16px;">
+    <button class="btn-save" style="margin-bottom:16px;" onclick="openModal('modal-gasto')">💸 + Registrar Gasto</button>
+    <div class="section-title">Por Categoría</div>
+    <div id="gastos-categorias" style="margin-bottom:16px;"><div class="empty-state"><div class="emoji">💸</div><div>Sin gastos registrados.</div></div></div>
+    <div class="section-title">Historial de Gastos</div>
+    <div class="feed" id="feed-gastos"><div class="empty-state"><div class="emoji">📭</div><div>Sin gastos registrados.</div></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-proveedores">
+  <div style="margin-top:16px;">
+    <div class="kpi-strip" style="grid-template-columns: 1fr 1fr;">
+      <div class="kpi gastos"><div class="kpi-label">Total Por Pagar</div><div class="kpi-value" id="kpi-total-cxp">$0</div><div class="kpi-sub" id="kpi-cxp-n">0 facturas pendientes</div></div>
+      <div class="kpi compras"><div class="kpi-label">Vencen Esta Semana</div><div class="kpi-value" id="kpi-vence-semana">$0</div><div class="kpi-sub" id="kpi-vence-n">0 facturas</div></div>
+    </div>
+    <button class="btn-save purple" style="margin-bottom:16px;" onclick="openModal('modal-proveedor')">🏭 + Registrar Factura</button>
+    <div class="section-title">Por Proveedor</div>
+    <div id="proveedores-list"><div class="empty-state"><div class="emoji">🏭</div><div>Sin proveedores registrados.<br>Registra tu primera factura.</div></div></div>
+  </div>
+</div>
+
+<div class="page" id="page-config">
+  <div style="margin-top:16px;">
+    <button class="btn-save purple" style="margin-bottom:14px;" onclick="openModal('modal-nuevo-producto')">➕ Agregar Producto Nuevo</button>
+    <input type="text" class="search-box" id="config-search" placeholder="🔍 Buscar producto..." oninput="renderConfigPrecios()">
+    <div class="section-title">Catálogo de Productos</div>
+    <div id="config-productos-list"></div>
+  </div>
+</div>
+
+<div class="page" id="page-reporte">
+  <div style="margin-top:16px;">
+    <div class="section-title">Reporte del Día</div>
+    <div class="report-block">
+      <div class="report-block-title">📊 Ventas</div>
+      <div class="report-row"><span class="r-lbl">Ventas brutas</span><span class="r-val" id="rep-ventas-brutas">$0</span></div>
+      <div class="report-row"><span class="r-lbl">Unidades vendidas</span><span class="r-val" id="rep-uds">0</span></div>
+      <div class="report-row"><span class="r-lbl">Clientes atendidos</span><span class="r-val" id="rep-clientes">0</span></div>
+      <div class="report-row"><span class="r-lbl">Productos distintos</span><span class="r-val" id="rep-productos">0</span></div>
+    </div>
+    <div class="report-block">
+      <div class="report-block-title">💰 Rentabilidad</div>
+      <div class="report-row"><span class="r-lbl">Ventas brutas</span><span class="r-val" id="rep-v2">$0</span></div>
+      <div class="report-row negativo"><span class="r-lbl">(-) Costo de ventas</span><span class="r-val" id="rep-costo">-$0</span></div>
+      <div class="report-row negativo"><span class="r-lbl">(-) Gastos operacionales</span><span class="r-val" id="rep-gastos-tot">-$0</span></div>
+      <div class="report-row total"><span class="r-lbl">= UTILIDAD NETA EST.</span><span class="r-val" id="rep-utilidad-neta">$0</span></div>
+    </div>
+    <div class="report-block">
+      <div class="report-block-title">🛒 Compras del Día</div>
+      <div class="report-row"><span class="r-lbl">Total invertido en compras</span><span class="r-val" id="rep-compras-tot">$0</span></div>
+      <div class="report-row"><span class="r-lbl">N° de entradas registradas</span><span class="r-val" id="rep-compras-n">0</span></div>
+    </div>
+    <div class="report-block">
+      <div class="report-block-title">🏭 Cuentas por Pagar</div>
+      <div class="report-row"><span class="r-lbl">Total pendiente a proveedores</span><span class="r-val" id="rep-cxp-tot">$0</span></div>
+      <div class="report-row"><span class="r-lbl">Facturas próximas a vencer</span><span class="r-val" id="rep-cxp-vence">0</span></div>
+    </div>
+    <button class="btn-save" onclick="exportReporte()" style="margin-top:4px;">📄 Compartir Reporte (texto)</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-compra">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🛒 Registrar Compra</div>
+    <div class="form-group">
+      <label class="form-label">Producto</label>
+      <select class="form-select" id="compra-producto" onchange="onProductoCompraChange()"><option value="">— Selecciona un producto —</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Cantidad</label><input class="form-input" type="number" id="compra-cantidad" placeholder="0" inputmode="numeric" oninput="calcCompraPreview()"></div>
+      <div class="form-group"><label class="form-label">P. Compra Unit. ($)</label><input class="form-input" type="number" id="compra-precio" placeholder="0" inputmode="numeric" oninput="calcCompraPreview()"><div class="form-hint" id="compra-precio-hint"></div></div>
+    </div>
+    <div class="form-group"><label class="form-label">Proveedor (opcional)</label><input class="form-input" type="text" id="compra-proveedor" placeholder="Ej: Alquería, Arboleda..."></div>
+    <div class="price-preview" id="compra-preview" style="display:none;">
+      <div><div class="price-preview-label">Total compra</div><div class="form-hint" id="compra-margen-preview"></div></div>
+      <div class="price-preview-value" id="compra-total-preview">$0</div>
+    </div>
+    <button class="btn-save green" onclick="guardarCompra()">✅ Guardar Compra</button>
+    <button class="btn-cancel" onclick="closeModal('modal-compra')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-gasto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💸 Registrar Gasto</div>
+    <div class="form-group">
+      <label class="form-label">Categoría</label>
+      <select class="form-select" id="gasto-categoria">
+        <option value="LOGÍSTICA">🚛 Logística (combustible, peajes, mantenimiento)</option>
+        <option value="NÓMINA">👥 Nómina (salarios, comisiones)</option>
+        <option value="BODEGA">🏭 Bodega (servicios, cuarto frío)</option>
+        <option value="ADMINISTRATIVO">📋 Administrativo (contador, internet, papelería)</option>
+        <option value="MARKETING">📣 Marketing (catálogos, publicidad)</option>
+        <option value="FINANCIERO">🏦 Financiero (intereses, comisiones bancarias)</option>
+        <option value="IMPUESTOS">🧾 Impuestos (RST, ICA)</option>
+        <option value="OTROS">📌 Otros</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Concepto</label><input class="form-input" type="text" id="gasto-concepto" placeholder="Ej: Combustible ruta Villas de Granada"></div>
+    <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="gasto-monto" placeholder="0" inputmode="numeric"></div>
+    <button class="btn-save" onclick="guardarGasto()">✅ Guardar Gasto</button>
+    <button class="btn-cancel" onclick="closeModal('modal-gasto')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-proveedor">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏭 Registrar Factura de Proveedor</div>
+    <div class="form-group">
+      <label class="form-label">Proveedor</label>
+      <input class="form-input" type="text" id="prov-nombre" placeholder="Ej: Alquería, Distribuidora Los Ángeles..." list="proveedores-existentes">
+      <datalist id="proveedores-existentes"></datalist>
+    </div>
+    <div class="form-group"><label class="form-label">Concepto / N° Factura</label><input class="form-input" type="text" id="prov-concepto" placeholder="Ej: Factura #4521 - Quesos"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Monto ($)</label><input class="form-input" type="number" id="prov-monto" placeholder="0" inputmode="numeric"></div>
+      <div class="form-group">
+        <label class="form-label">Condición</label>
+        <select class="form-select" id="prov-condicion" onchange="toggleFechaVencimiento()">
+          <option value="contado">Contado (ya pagado)</option>
+          <option value="credito">Crédito (pendiente)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" id="prov-fecha-group"><label class="form-label">Fecha de Vencimiento</label><input class="form-input" type="date" id="prov-vencimiento"></div>
+    <button class="btn-save purple" onclick="guardarFacturaProveedor()">✅ Guardar Factura</button>
+    <button class="btn-cancel" onclick="closeModal('modal-proveedor')">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-ventas">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📊 Cargar Ventas del Día</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Exporta el archivo de Ruttas App y súbelo aquí.</p>
+    <div class="upload-zone" id="upload-zone">
+      <input type="file" accept=".xlsx,.xls" onchange="handleVentasFile(event)" id="ventas-file-input">
+      <div class="upload-icon">📂</div><div class="upload-title">Toca para seleccionar archivo</div><div class="upload-sub">Archivo .xlsx de Ruttas App</div>
+    </div>
+    <div id="upload-status" style="margin-top:12px;font-size:13px;color:var(--green);text-align:center;display:none;"></div>
+    <button class="btn-cancel" onclick="closeModal('modal-ventas')" style="margin-top:12px;">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-nuevo-producto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">➕ Agregar Producto Nuevo</div>
+    <div class="form-group"><label class="form-label">Nombre del Producto</label><input class="form-input" type="text" id="nuevo-prod-nombre" placeholder="Ej: Jugo California Naranja X1L"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Precio Compra ($)</label><input class="form-input" type="number" id="nuevo-prod-compra" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Precio Venta ($)</label><input class="form-input" type="number" id="nuevo-prod-venta" placeholder="0"></div>
+    </div>
+    <button class="btn-save purple" onclick="agregarProductoNuevo()">✅ Agregar Producto</button>
+    <button class="btn-cancel" onclick="closeModal('modal-nuevo-producto')">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, doc, setDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBhMVFs05KGhv0nCZMRJz6hgvwyXwMElLA",
+  authDomain: "incoleal-f487f.firebaseapp.com",
+  projectId: "incoleal-f487f",
+  storageBucket: "incoleal-f487f.firebasestorage.app",
+  messagingSenderId: "532846641265",
+  appId: "1:532846641265:web:2752c8b93588b7fdac9bd0",
+  measurementId: "G-FPJ6SV38Y3"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+window.fb = { db, doc, setDoc, getDoc };
+window.fbReady = true;
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script>
+const state = { ventas: [], compras: [], gastos: [], proveedores: {}, catalogo: {}, currentDateKey: '' };
+
+function todayKey() { return new Date().toISOString().split('T')[0]; }
+
+function setStatus(text, type) {
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusDot').className = 'status-dot' + (type ? ' ' + type : '');
+}
+
+const PRODUCTOS_DEFAULT = [
+  { nombre: 'PRODUCTOS VARIOS', precioCompra: 0, precioVenta: 0 },
+  { nombre: 'LAVA LOZA BALDE', precioCompra: 13000, precioVenta: 20000 },
+  { nombre: 'CREMA DE LECHE LA ARBOLEDA X200g', precioCompra: 2033, precioVenta: 3000 },
+  { nombre: 'KUMIS ENTERO BOTELLA X250ml', precioCompra: 1780, precioVenta: 2600 },
+  { nombre: 'YOGURT ENTERO VASO X4', precioCompra: 4831, precioVenta: 7000 },
+  { nombre: 'YOGURT ENTERO BOLSA 150g X8', precioCompra: 6364, precioVenta: 9000 },
+  { nombre: 'LACBOY CON CEREAL X4', precioCompra: 7547, precioVenta: 10500 },
+  { nombre: 'MANTEQUILLA DELICREAM 125g', precioCompra: 1100, precioVenta: 1500 },
+  { nombre: 'CREMA DE LECHE DELI CREAMX125g', precioCompra: 1100, precioVenta: 1500 },
+  { nombre: 'CHIRROS X 45g', precioCompra: 1625, precioVenta: 2200 },
+  { nombre: 'LECHE BRAMA MEGALITRO X6', precioCompra: 20700, precioVenta: 28000 },
+  { nombre: 'LECHE HATO GRANDE X400ml', precioCompra: 1260, precioVenta: 1700 },
+  { nombre: 'SIXPACK JUGO CAJA', precioCompra: 3625, precioVenta: 4875 },
+  { nombre: 'LECHE ENTERA RICADALCT X500ml', precioCompra: 1610, precioVenta: 2100 },
+  { nombre: 'LECHE ENTERA HATO GRANDE X1000ml', precioCompra: 3085, precioVenta: 4000 },
+  { nombre: 'YOGURT ENTERO BOLSA X1000ml', precioCompra: 5025, precioVenta: 6500 },
+  { nombre: 'KUMIS ENTERO BOLSA X1000ml', precioCompra: 5038, precioVenta: 6500 },
+  { nombre: 'SALCHICHON', precioCompra: 7000, precioVenta: 9000 },
+  { nombre: 'YOGURT ENTERO BOTELLA X250ml', precioCompra: 2024, precioVenta: 2600 },
+  { nombre: 'LECHE ARBOLEDA ENTERA X400ml', precioCompra: 1410, precioVenta: 1800 },
+  { nombre: 'HATO GRANDE X1100', precioCompra: 3230, precioVenta: 4100 },
+  { nombre: 'QUESO COSTENO BLOQUE', precioCompra: 15000, precioVenta: 19000 },
+  { nombre: 'GELATINA VASO X 4', precioCompra: 4434, precioVenta: 5600 },
+  { nombre: 'LECHE ARBOLEDA ENTERA X1000ml', precioCompra: 3250, precioVenta: 4100 },
+  { nombre: 'LECHE ENTERA RICADALACT X1000ml', precioCompra: 3250, precioVenta: 4100 },
+  { nombre: 'CREMA DE LECHE LA ARBOLEDA X850g', precioCompra: 9550, precioVenta: 12000 },
+  { nombre: 'SIXPACK LECHE HATO GRANDE X900ml', precioCompra: 16800, precioVenta: 21000 },
+  { nombre: 'YOGURT LA ARBOLEDA GARRAFA X 1000ml', precioCompra: 8487, precioVenta: 10500 },
+  { nombre: 'QUESO COMBINADO x12', precioCompra: 13000, precioVenta: 16000 },
+  { nombre: 'QUESO LA ARBOLEDA DOBLE CREMA X125g', precioCompra: 3095, precioVenta: 3800 },
+  { nombre: 'SIXPACK LECHE ARBOLEDA DESLACTOSADA X1000ml', precioCompra: 22080, precioVenta: 27000 },
+  { nombre: 'CREMA DE LECHE DELI CREAM X500g', precioCompra: 4100, precioVenta: 5000 },
+  { nombre: 'QUESO ALEJANDRA DOBLE CREMA ENTERO X250g', precioCompra: 6180, precioVenta: 7500 },
+  { nombre: 'SIXPACK LECHE BRAMA X900ml', precioCompra: 17340, precioVenta: 21000 },
+  { nombre: 'QUESO DOBLE CREMA TAJADO ALEJANDRA X125g', precioCompra: 2750, precioVenta: 3300 },
+  { nombre: 'QUESO DOBLE CREMA ENTERO  ALEJANDRA X125g', precioCompra: 2750, precioVenta: 3300 },
+  { nombre: 'QUESO DOBLE CREMA TAJADO ALEJANDRA X250g', precioCompra: 5500, precioVenta: 6600 },
+  { nombre: 'QUESO ALEJANDRA X500g', precioCompra: 11000, precioVenta: 13200 },
+  { nombre: 'SIXPACK LECHE ARBOLEDA ENTERA X900ml', precioCompra: 17550, precioVenta: 21000 },
+  { nombre: 'LECHE CAJA ENTERA X900ml', precioCompra: 3279, precioVenta: 3917 },
+  { nombre: 'MANTEQUILLA DELI CREAM X500g', precioCompra: 4200, precioVenta: 5000 },
+  { nombre: 'MANTEQUILLA DELI CREAM 250G', precioCompra: 2100, precioVenta: 2500 },
+  { nombre: 'CREMA DE LECHE DELI CREAM 250g', precioCompra: 2100, precioVenta: 2500 },
+  { nombre: 'SIXPACK LECHE DESLACTOSADA 1100 LA ARBOLEDA', precioCompra: 24360, precioVenta: 29000 },
+  { nombre: 'SIXPACK LECHE ARBOLEDA LV 1100', precioCompra: 23670, precioVenta: 28000 },
+  { nombre: 'YOGURT LA ARBOLEDA GARRFA X 3750ml', precioCompra: 24527, precioVenta: 29000 },
+  { nombre: 'LECHE NUEVA LECHE X1100', precioCompra: 3300, precioVenta: 3900 },
+  { nombre: 'LECHE ARBOLEDA ENTERA X1100ml', precioCompra: 3476, precioVenta: 4100 },
+  { nombre: 'LECHE CAJA DESLACTOSADA X900', precioCompra: 3327, precioVenta: 3917 },
+  { nombre: 'QUESO DOBLE CREMA TAJADO LOS ANGELES X125g', precioCompra: 3250, precioVenta: 3800 },
+  { nombre: 'QUESO DOBLE CREMA ENTERO LOS ANGELES X125g', precioCompra: 3250, precioVenta: 3800 },
+  { nombre: 'BLOQUE QUESO DOBLE CREMA CAQUESEÑO ENTERO X2500g', precioCompra: 37500, precioVenta: 44000 },
+  { nombre: 'QUESO BLOQUE CAQUESENO TAJADO X2500g', precioCompra: 38500, precioVenta: 45000 },
+  { nombre: 'HUEVOS AA X30', precioCompra: 10350, precioVenta: 12000 },
+  { nombre: 'QUESO DOBLE CREMA TAJADO LOS ANGELES X250g', precioCompra: 6500, precioVenta: 7500 },
+  { nombre: 'QUESO DOBLE CREMA ENTERO LOS ANGELES X250g', precioCompra: 6500, precioVenta: 7500 },
+  { nombre: 'YOGURT CON CEREAL X', precioCompra: 10453, precioVenta: 13200 },
+  { nombre: 'SIXPACK LECHE DESLACTOSADA X900ml', precioCompra: 19212, precioVenta: 22000 },
+  { nombre: 'AREQUIPE CANECA 25k', precioCompra: 194700, precioVenta: 220000 },
+  { nombre: 'HUEVOS A X30', precioCompra: 10950, precioVenta: 12300 },
+  { nombre: 'QUESO COSTENO MOLIDO', precioCompra: 17800, precioVenta: 20000 },
+  { nombre: 'QUESO PERA X450', precioCompra: 10300, precioVenta: 11500 },
+  { nombre: 'QUESO LA ARBOLEDA DOBLE CREMA TAJADO X250g', precioCompra: 6737, precioVenta: 7500 },
+  { nombre: 'HUEVOS EXTRA X30', precioCompra: 13500, precioVenta: 15000 },
+  { nombre: 'CUAJDA LA ARBOLEDA', precioCompra: 16320, precioVenta: 19000 },
+  { nombre: 'BLOQUE QUESO ALEJANDRA X2500g', precioCompra: 42500, precioVenta: 48000 },
+  { nombre: 'QUESO CAMPESINO SEMIDESCREMADO', precioCompra: 12000, precioVenta: 13500 },
+  { nombre: 'QUESO DOBLE CREMA LOS ANGELES X500g', precioCompra: 13000, precioVenta: 14500 },
+  { nombre: 'BLOQUE QUESO PERA', precioCompra: 52000, precioVenta: 56000 },
+  { nombre: 'BLOQUE QUESO CAMPESINO CRIOLLO', precioCompra: 18500, precioVenta: 19800 },
+];
+
+const CATEGORIAS_ICON = { 'LOGÍSTICA':'🚛','NÓMINA':'👥','BODEGA':'🏭','ADMINISTRATIVO':'📋','MARKETING':'📣','FINANCIERO':'🏦','IMPUESTOS':'🧾','OTROS':'📌' };
+
+async function fbSaveDay() {
+  if (!window.fbReady) return;
+  setStatus('Guardando...', 'syncing');
+  try {
+    const { db, doc, setDoc } = window.fb;
+    await setDoc(doc(db, 'dias', state.currentDateKey), { ventas: state.ventas, compras: state.compras, gastos: state.gastos, updatedAt: new Date().toISOString() });
+    setStatus('Sincronizado', 'online');
+  } catch (e) { console.error(e); setStatus('Error al guardar', ''); }
+}
+
+async function fbLoadDay(dateKey) {
+  if (!window.fbReady) return { ventas: [], compras: [], gastos: [] };
+  try {
+    const { db, doc, getDoc } = window.fb;
+    const snap = await getDoc(doc(db, 'dias', dateKey));
+    return snap.exists() ? snap.data() : { ventas: [], compras: [], gastos: [] };
+  } catch (e) { console.error(e); return { ventas: [], compras: [], gastos: [] }; }
+}
+
+async function fbSaveCatalogo() {
+  if (!window.fbReady) return;
+  try { const { db, doc, setDoc } = window.fb; await setDoc(doc(db, 'config', 'catalogo'), { productos: state.catalogo }); }
+  catch (e) { console.error(e); }
+}
+
+async function fbLoadCatalogo() {
+  if (!window.fbReady) return null;
+  try { const { db, doc, getDoc } = window.fb; const snap = await getDoc(doc(db, 'config', 'catalogo')); return snap.exists() ? snap.data().productos : null; }
+  catch (e) { console.error(e); return null; }
+}
+
+async function fbSaveProveedores() {
+  if (!window.fbReady) return;
+  try { const { db, doc, setDoc } = window.fb; await setDoc(doc(db, 'config', 'proveedores'), { data: state.proveedores }); }
+  catch (e) { console.error(e); }
+}
+
+async function fbLoadProveedores() {
+  if (!window.fbReady) return null;
+  try { const { db, doc, getDoc } = window.fb; const snap = await getDoc(doc(db, 'config', 'proveedores')); return snap.exists() ? snap.data().data : null; }
+  catch (e) { console.error(e); return null; }
+}
+
+async function init() {
+  document.getElementById('currentDate').value = todayKey();
+  state.currentDateKey = todayKey();
+
+  window.addEventListener('firebase-ready', async () => {
+    setStatus('Cargando datos...', 'syncing');
+    let cat = await fbLoadCatalogo();
+    if (!cat) {
+      cat = {};
+      PRODUCTOS_DEFAULT.forEach(p => cat[p.nombre] = { precioCompra: p.precioCompra, precioVenta: p.precioVenta });
+      state.catalogo = cat;
+      await fbSaveCatalogo();
+    } else { state.catalogo = cat; }
+
+    let provs = await fbLoadProveedores();
+    state.proveedores = provs || {};
+
+    await loadDay(state.currentDateKey);
+    populateProductSelect();
+    updateAll();
+    setStatus('Sincronizado', 'online');
+  });
+
+  setTimeout(() => {
+    if (Object.keys(state.catalogo).length === 0) {
+      PRODUCTOS_DEFAULT.forEach(p => state.catalogo[p.nombre] = { precioCompra: p.precioCompra, precioVenta: p.precioVenta });
+      populateProductSelect();
+      updateAll();
+      setStatus('Modo local (sin conexión)', '');
+    }
+  }, 3000);
+}
+
+async function loadDay(dateKey) {
+  const data = await fbLoadDay(dateKey);
+  state.ventas  = data.ventas  || [];
+  state.compras = data.compras || [];
+  state.gastos  = data.gastos  || [];
+}
+
+function populateProductSelect() {
+  const sel = document.getElementById('compra-producto');
+  sel.innerHTML = '<option value="">— Selecciona un producto —</option>';
+  Object.keys(state.catalogo).sort().forEach(nombre => {
+    const opt = document.createElement('option');
+    opt.value = nombre; opt.textContent = nombre;
+    sel.appendChild(opt);
+  });
+}
+
+async function changeDate(delta) {
+  const input = document.getElementById('currentDate');
+  const d = new Date(input.value + 'T00:00:00');
+  d.setDate(d.getDate() + delta);
+  input.value = d.toISOString().split('T')[0];
+  await onDateChange();
+}
+
+async function onDateChange() {
+  const newKey = document.getElementById('currentDate').value;
+  state.currentDateKey = newKey;
+  setStatus('Cargando...', 'syncing');
+  await loadDay(newKey);
+  updateAll();
+  setStatus('Sincronizado', 'online');
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'config') renderConfigPrecios();
+  if (id === 'proveedores') renderProveedores();
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (id === 'modal-proveedor') {
+    document.getElementById('proveedores-existentes').innerHTML = Object.keys(state.proveedores).map(p => `<option value="${p}">`).join('');
+  }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+document.querySelectorAll('.modal-overlay').forEach(m => { m.addEventListener('click', e => { if(e.target === m) closeModal(m.id); }); });
+
+function toggleFechaVencimiento() {
+  document.getElementById('prov-fecha-group').style.display = document.getElementById('prov-condicion').value === 'credito' ? 'block' : 'none';
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show' + (type ? ' '+type : '');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+const fmt = n => '$' + Math.round(n).toLocaleString('es-CO');
+const now = () => new Date().toLocaleTimeString('es-CO', {hour:'2-digit',minute:'2-digit'});
+
+function onProductoCompraChange() {
+  const nombre = document.getElementById('compra-producto').value;
+  const prod = state.catalogo[nombre];
+  if (prod && prod.precioCompra > 0) {
+    document.getElementById('compra-precio').value = prod.precioCompra;
+    document.getElementById('compra-precio-hint').textContent = `Precio habitual: ${fmt(prod.precioCompra)}`;
+  } else {
+    document.getElementById('compra-precio').value = '';
+    document.getElementById('compra-precio-hint').textContent = 'Ingresa el precio de esta compra';
+  }
+  calcCompraPreview();
+}
+
+function calcCompraPreview() {
+  const qty = parseFloat(document.getElementById('compra-cantidad').value) || 0;
+  const price = parseFloat(document.getElementById('compra-precio').value) || 0;
+  const total = qty * price;
+  const preview = document.getElementById('compra-preview');
+  if (qty > 0 && price > 0) {
+    preview.style.display = 'flex';
+    document.getElementById('compra-total-preview').textContent = fmt(total);
+    const nombre = document.getElementById('compra-producto').value;
+    const prod = state.catalogo[nombre];
+    if (prod && prod.precioVenta > 0) {
+      const margen = ((prod.precioVenta - price) / prod.precioVenta * 100).toFixed(0);
+      document.getElementById('compra-margen-preview').textContent = `Margen estimado: ${margen}%`;
+    }
+  } else { preview.style.display = 'none'; }
+}
+
+async function guardarCompra() {
+  const producto = document.getElementById('compra-producto').value;
+  const cantidad = parseFloat(document.getElementById('compra-cantidad').value);
+  const precio = parseFloat(document.getElementById('compra-precio').value);
+  const proveedor = document.getElementById('compra-proveedor').value;
+
+  if (!producto) { showToast('Selecciona un producto', 'error'); return; }
+  if (!cantidad || cantidad <= 0) { showToast('Ingresa una cantidad válida', 'error'); return; }
+  if (!precio || precio <= 0) { showToast('Ingresa el precio de compra', 'error'); return; }
+
+  state.compras.push({ producto, cantidad, precio, total: cantidad * precio, proveedor, hora: now() });
+
+  document.getElementById('compra-producto').value = '';
+  document.getElementById('compra-cantidad').value = '';
+  document.getElementById('compra-precio').value = '';
+  document.getElementById('compra-proveedor').value = '';
+  document.getElementById('compra-preview').style.display = 'none';
+  document.getElementById('compra-precio-hint').textContent = '';
+
+  closeModal('modal-compra');
+  updateAll();
+  await fbSaveDay();
+  showToast('✅ Compra registrada correctamente');
+}
+
+async function guardarGasto() {
+  const categoria = document.getElementById('gasto-categoria').value;
+  const concepto = document.getElementById('gasto-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('gasto-monto').value);
+
+  if (!concepto) { showToast('Escribe el concepto del gasto', 'error'); return; }
+  if (!monto || monto <= 0) { showToast('Ingresa un monto válido', 'error'); return; }
+
+  state.gastos.push({ categoria, concepto, monto, hora: now() });
+  document.getElementById('gasto-concepto').value = '';
+  document.getElementById('gasto-monto').value = '';
+
+  closeModal('modal-gasto');
+  updateAll();
+  await fbSaveDay();
+  showToast('✅ Gasto registrado correctamente');
+}
+
+async function guardarFacturaProveedor() {
+  const nombre = document.getElementById('prov-nombre').value.trim();
+  const concepto = document.getElementById('prov-concepto').value.trim();
+  const monto = parseFloat(document.getElementById('prov-monto').value);
+  const condicion = document.getElementById('prov-condicion').value;
+  const vencimiento = document.getElementById('prov-vencimiento').value;
+
+  if (!nombre) { showToast('Escribe el nombre del proveedor', 'error'); return; }
+  if (!concepto) { showToast('Escribe el concepto o número de factura', 'error'); return; }
+  if (!monto || monto <= 0) { showToast('Ingresa un monto válido', 'error'); return; }
+  if (condicion === 'credito' && !vencimiento) { showToast('Ingresa la fecha de vencimiento', 'error'); return; }
+
+  if (!state.proveedores[nombre]) state.proveedores[nombre] = [];
+  state.proveedores[nombre].push({
+    id: Date.now().toString(), concepto, monto, condicion,
+    vencimiento: condicion === 'credito' ? vencimiento : null,
+    fechaRegistro: state.currentDateKey, pagado: condicion === 'contado'
+  });
+
+  document.getElementById('prov-nombre').value = '';
+  document.getElementById('prov-concepto').value = '';
+  document.getElementById('prov-monto').value = '';
+  document.getElementById('prov-vencimiento').value = '';
+
+  closeModal('modal-proveedor');
+  await fbSaveProveedores();
+  updateAll();
+  if (document.getElementById('page-proveedores').classList.contains('active')) renderProveedores();
+  showToast('✅ Factura registrada');
+}
+
+async function marcarPagado(provNombre, facturaId) {
+  const facturas = state.proveedores[provNombre];
+  const f = facturas.find(x => x.id === facturaId);
+  if (f) f.pagado = true;
+  await fbSaveProveedores();
+  renderProveedores();
+  updateAll();
+  showToast('✅ Factura marcada como pagada');
+}
+
+async function eliminarFactura(provNombre, facturaId) {
+  if (!confirm('¿Eliminar esta factura?')) return;
+  state.proveedores[provNombre] = state.proveedores[provNombre].filter(x => x.id !== facturaId);
+  if (state.proveedores[provNombre].length === 0) delete state.proveedores[provNombre];
+  await fbSaveProveedores();
+  renderProveedores();
+  updateAll();
+}
+
+function getCXPTotales() {
+  let total = 0, totalVenceSemana = 0, nFacturas = 0, nVenceSemana = 0;
+  const hoy = new Date();
+  const enUnaSemana = new Date(); enUnaSemana.setDate(hoy.getDate() + 7);
+
+  Object.values(state.proveedores).forEach(facturas => {
+    facturas.forEach(f => {
+      if (!f.pagado) {
+        total += f.monto; nFacturas++;
+        if (f.vencimiento) {
+          const vence = new Date(f.vencimiento + 'T00:00:00');
+          if (vence <= enUnaSemana) { totalVenceSemana += f.monto; nVenceSemana++; }
+        }
+      }
+    });
+  });
+  return { total, totalVenceSemana, nFacturas, nVenceSemana };
+}
+
+function renderProveedores() {
+  const list = document.getElementById('proveedores-list');
+  const nombres = Object.keys(state.proveedores);
+  if (nombres.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="emoji">🏭</div><div>Sin proveedores registrados.<br>Registra tu primera factura.</div></div>';
+    return;
+  }
+  list.innerHTML = nombres.map(nombre => {
+    const facturas = state.proveedores[nombre];
+    const pendientes = facturas.filter(f => !f.pagado);
+    const totalDebe = pendientes.reduce((s,f) => s + f.monto, 0);
+    const facturasHtml = facturas.slice().reverse().map(f => {
+      let venceLabel = '', venceClass = '';
+      if (f.vencimiento && !f.pagado) {
+        const vence = new Date(f.vencimiento + 'T00:00:00');
+        const hoy = new Date(); hoy.setHours(0,0,0,0);
+        const dias = Math.ceil((vence - hoy) / (1000*60*60*24));
+        if (dias < 0) { venceLabel = `🚨 Vencida hace ${Math.abs(dias)}d`; venceClass = 'vence-alert'; }
+        else if (dias <= 3) { venceLabel = `⚠️ Vence en ${dias}d`; venceClass = 'vence-soon'; }
+        else { venceLabel = `Vence ${f.vencimiento}`; }
+      }
+      return `<div class="factura-item">
+        <div class="factura-info"><span class="factura-concepto">${f.concepto}</span><span class="factura-fecha ${venceClass}">${f.pagado ? '✅ Pagada' : venceLabel}</span></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="factura-monto" style="color:${f.pagado ? 'var(--muted)' : 'var(--gold)'}">${fmt(f.monto)}</span>
+          ${!f.pagado ? `<button class="btn-small" onclick="marcarPagado('${nombre.replace(/'/g,"\\'")}','${f.id}')">✓ Pagar</button>` : ''}
+          <button class="feed-delete" onclick="eliminarFactura('${nombre.replace(/'/g,"\\'")}','${f.id}')">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="proveedor-card">
+      <div class="proveedor-header"><div class="proveedor-name">🏭 ${nombre}</div><div class="proveedor-debe">${totalDebe > 0 ? fmt(totalDebe) : '✅ Al día'}</div></div>
+      ${facturasHtml}
+    </div>`;
+  }).join('');
+}
+
+function handleVentasFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('upload-status');
+  status.style.display = 'block'; status.style.color = 'var(--muted)'; status.textContent = '⏳ Procesando archivo...';
+
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const row = rows[i].map(c => String(c || '').trim().toLowerCase());
+        if (row.includes('producto') && row.includes('vendedor')) { headerIdx = i; break; }
+      }
+      if (headerIdx < 0) throw new Error('No se encontró la estructura del archivo de Ruttas.');
+
+      const headers = rows[headerIdx].map(c => String(c||'').trim().toLowerCase());
+      const iP = headers.indexOf('producto'), iC = headers.indexOf('cliente'), iV = headers.indexOf('vendedor'), iR = headers.indexOf('ruta');
+      const iQ = headers.findIndex(h => h.includes('cantidad')), iT = headers.findIndex(h => h.includes('total'));
+
+      const nuevasVentas = [];
+      let lastProd = '', lastCliente = '';
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || row.length === 0) continue;
+        const prod = String(row[iP] || '').trim() || lastProd;
+        const cliente = String(row[iC] || '').trim() || lastCliente;
+        const vend = String(row[iV] || '').trim();
+        const ruta = String(row[iR] || '').trim();
+        const qty = parseFloat(row[iQ]) || 0;
+        const total = parseFloat(row[iT]) || 0;
+        if (prod) lastProd = prod;
+        if (cliente) lastCliente = cliente;
+        if (!vend || qty === 0) continue;
+        nuevasVentas.push({ producto: prod, cliente, vendedor: vend, ruta, cantidad: qty, total, precioUnit: qty > 0 ? total / qty : 0 });
+      }
+      if (nuevasVentas.length === 0) throw new Error('No se encontraron datos de ventas en el archivo.');
+
+      state.ventas = nuevasVentas;
+      status.style.color = 'var(--green)'; status.textContent = `✅ ${state.ventas.length} líneas cargadas correctamente`;
+      event.target.value = '';
+      await fbSaveDay();
+
+      setTimeout(() => { closeModal('modal-ventas'); updateAll(); showToast(`📊 ${state.ventas.length} ventas cargadas y guardadas`); }, 1000);
+    } catch(err) { status.style.color = 'var(--accent)'; status.textContent = '❌ ' + err.message; }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderConfigPrecios() {
+  const search = document.getElementById('config-search').value.toLowerCase();
+  const list = document.getElementById('config-productos-list');
+  const nombres = Object.keys(state.catalogo).filter(n => n.toLowerCase().includes(search)).sort();
+
+  if (nombres.length === 0) { list.innerHTML = '<div class="empty-state"><div class="emoji">🔍</div><div>No se encontraron productos.</div></div>'; return; }
+
+  list.innerHTML = nombres.map(nombre => {
+    const p = state.catalogo[nombre];
+    const margen = p.precioVenta > 0 ? ((p.precioVenta - p.precioCompra) / p.precioVenta * 100) : 0;
+    let tagBg = 'rgba(245,166,35,.2)', tagColor = 'var(--gold)';
+    if (margen >= 25) { tagColor = 'var(--green)'; tagBg='rgba(46,204,113,.2)'; }
+    else if (margen < 12) { tagColor = 'var(--accent)'; tagBg='rgba(233,69,96,.2)'; }
+    const safeName = nombre.replace(/'/g, "\\'");
+    const idEnc = btoa(encodeURIComponent(nombre));
+    return `<div class="prod-config-row">
+      <div class="prod-config-name">${nombre}</div>
+      <div class="prod-config-inputs">
+        <input type="number" value="${p.precioCompra}" placeholder="Compra" id="cfg-compra-${idEnc}" oninput="updateMargenTag('${safeName}')">
+        <input type="number" value="${p.precioVenta}" placeholder="Venta" id="cfg-venta-${idEnc}" oninput="updateMargenTag('${safeName}')">
+        <span class="prod-margen-tag" id="cfg-margen-${idEnc}" style="background:${tagBg};color:${tagColor};">${margen.toFixed(0)}%</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn-small" style="flex:1;" onclick="guardarPrecioProducto('${safeName}')">💾 Guardar</button>
+        <button class="btn-small danger" onclick="eliminarProducto('${safeName}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateMargenTag(nombre) {
+  const id = btoa(encodeURIComponent(nombre));
+  const compra = parseFloat(document.getElementById(`cfg-compra-${id}`).value) || 0;
+  const venta = parseFloat(document.getElementById(`cfg-venta-${id}`).value) || 0;
+  const margen = venta > 0 ? ((venta - compra) / venta * 100) : 0;
+  const tag = document.getElementById(`cfg-margen-${id}`);
+  tag.textContent = margen.toFixed(0) + '%';
+  let bg = 'rgba(245,166,35,.2)', color = 'var(--gold)';
+  if (margen >= 25) { color = 'var(--green)'; bg='rgba(46,204,113,.2)'; }
+  else if (margen < 12) { color = 'var(--accent)'; bg='rgba(233,69,96,.2)'; }
+  tag.style.background = bg; tag.style.color = color;
+}
+
+async function guardarPrecioProducto(nombre) {
+  const id = btoa(encodeURIComponent(nombre));
+  const compra = parseFloat(document.getElementById(`cfg-compra-${id}`).value) || 0;
+  const venta = parseFloat(document.getElementById(`cfg-venta-${id}`).value) || 0;
+  state.catalogo[nombre] = { precioCompra: compra, precioVenta: venta };
+  await fbSaveCatalogo();
+  populateProductSelect();
+  showToast(`✅ ${nombre} actualizado`);
+}
+
+async function eliminarProducto(nombre) {
+  if (!confirm(`¿Eliminar "${nombre}" del catálogo?`)) return;
+  delete state.catalogo[nombre];
+  await fbSaveCatalogo();
+  populateProductSelect();
+  renderConfigPrecios();
+  showToast('🗑️ Producto eliminado');
+}
+
+async function agregarProductoNuevo() {
+  const nombre = document.getElementById('nuevo-prod-nombre').value.trim();
+  const compra = parseFloat(document.getElementById('nuevo-prod-compra').value) || 0;
+  const venta = parseFloat(document.getElementById('nuevo-prod-venta').value) || 0;
+  if (!nombre) { showToast('Escribe el nombre del producto', 'error'); return; }
+  if (state.catalogo[nombre]) { showToast('Ese producto ya existe', 'error'); return; }
+  state.catalogo[nombre] = { precioCompra: compra, precioVenta: venta };
+  await fbSaveCatalogo();
+  populateProductSelect();
+  document.getElementById('nuevo-prod-nombre').value = '';
+  document.getElementById('nuevo-prod-compra').value = '';
+  document.getElementById('nuevo-prod-venta').value = '';
+  closeModal('modal-nuevo-producto');
+  renderConfigPrecios();
+  showToast(`✅ ${nombre} agregado al catálogo`);
+}
+
+function updateAll() {
+  updateKPIs();
+  updateFeedDashboard();
+  updateFeedCompras();
+  updateFeedGastos();
+  updateVentasPage();
+  updateReporte();
+  updateAlertaCXP();
+  updateCXPKPIs();
+}
+
+function getTotales() {
+  const totalVentas = state.ventas.reduce((s,v) => s + v.total, 0);
+  const totalUds = state.ventas.reduce((s,v) => s + v.cantidad, 0);
+  const totalGastos = state.gastos.reduce((s,g) => s + g.monto, 0);
+  const totalCompras = state.compras.reduce((s,c) => s + c.total, 0);
+
+  let costoVentas = 0;
+  state.ventas.forEach(v => {
+    let prod = state.catalogo[v.producto];
+    if (!prod) {
+      const found = Object.entries(state.catalogo).find(([k]) => k.toUpperCase() === v.producto.toUpperCase());
+      if (found) prod = found[1];
+    }
+    if (prod && prod.precioCompra > 0) costoVentas += prod.precioCompra * v.cantidad;
+    else costoVentas += v.total * 0.85;
+  });
+
+  const utilidad = totalVentas - costoVentas;
+  const margen = totalVentas > 0 ? (utilidad / totalVentas * 100) : 0;
+  const clientes = new Set(state.ventas.map(v => v.cliente)).size;
+  const productos = new Set(state.ventas.map(v => v.producto)).size;
+  return { totalVentas, totalUds, totalGastos, totalCompras, costoVentas, utilidad, margen, clientes, productos };
+}
+
+function updateKPIs() {
+  const t = getTotales();
+  document.getElementById('kpi-ventas').textContent = fmt(t.totalVentas);
+  document.getElementById('kpi-ventas-uds').textContent = `${Math.round(t.totalUds).toLocaleString('es-CO')} unidades`;
+  document.getElementById('kpi-utilidad').textContent = fmt(t.utilidad);
+  document.getElementById('kpi-margen').textContent = `${t.margen.toFixed(1)}% margen`;
+  document.getElementById('kpi-gastos').textContent = fmt(t.totalGastos);
+  document.getElementById('kpi-gastos-n').textContent = `${state.gastos.length} registros`;
+  document.getElementById('kpi-compras').textContent = fmt(t.totalCompras);
+  document.getElementById('kpi-compras-n').textContent = `${state.compras.length} registros`;
+}
+
+function updateCXPKPIs() {
+  const t = getCXPTotales();
+  document.getElementById('kpi-total-cxp').textContent = fmt(t.total);
+  document.getElementById('kpi-cxp-n').textContent = `${t.nFacturas} facturas pendientes`;
+  document.getElementById('kpi-vence-semana').textContent = fmt(t.totalVenceSemana);
+  document.getElementById('kpi-vence-n').textContent = `${t.nVenceSemana} facturas`;
+}
+
+function updateAlertaCXP() {
+  const t = getCXPTotales();
+  const div = document.getElementById('alerta-cxp');
+  if (t.nVenceSemana > 0) {
+    div.style.display = 'block';
+    div.innerHTML = `<div class="report-block" style="border-color:var(--gold);background:rgba(245,166,35,.08);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px;">⚠️</span>
+        <div><div style="font-weight:700;font-size:13px;">${t.nVenceSemana} factura(s) vencen esta semana</div>
+        <div style="font-size:12px;color:var(--muted);">Total: ${fmt(t.totalVenceSemana)} — revisa la pestaña Proveedores</div></div>
+      </div>
+    </div>`;
+  } else { div.style.display = 'none'; }
+}
+
+function updateFeedDashboard() {
+  const feed = document.getElementById('feed-dashboard');
+  const all = [
+    ...state.compras.map(c => ({ tipo:'compra', nombre:c.producto, meta:`${c.cantidad} uds · ${c.hora}`, monto:c.total })),
+    ...state.gastos.map(g => ({ tipo:'gasto', nombre:g.concepto, meta:`${g.categoria} · ${g.hora}`, monto:g.monto })),
+    ...( state.ventas.length > 0 ? [{ tipo:'venta', nombre:'Ventas cargadas desde Ruttas', meta:`${state.ventas.length} líneas`, monto: state.ventas.reduce((s,v)=>s+v.total,0) }] : [] )
+  ];
+  if (all.length === 0) { feed.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><div>Sin movimientos.<br>Usa los botones de arriba para registrar.</div></div>'; return; }
+  const icons = { compra:'🛒', gasto:'💸', venta:'📊' };
+  feed.innerHTML = all.reverse().map(item => `<div class="feed-item">
+    <div class="feed-icon ${item.tipo}">${icons[item.tipo]}</div>
+    <div class="feed-body"><div class="feed-name">${item.nombre}</div><div class="feed-meta">${item.meta}</div></div>
+    <div class="feed-amount ${item.tipo}">${fmt(item.monto)}</div>
+  </div>`).join('');
+}
+
+function updateFeedCompras() {
+  const feed = document.getElementById('feed-compras');
+  if (state.compras.length === 0) { feed.innerHTML = '<div class="empty-state"><div class="emoji">📦</div><div>Sin compras registradas.</div></div>'; return; }
+  feed.innerHTML = [...state.compras].reverse().map(c => `<div class="feed-item">
+    <div class="feed-icon compra">🛒</div>
+    <div class="feed-body"><div class="feed-name">${c.producto}</div><div class="feed-meta">${c.cantidad} uds · ${fmt(c.precio)}/ud · ${c.proveedor || 'Sin proveedor'} · ${c.hora}</div></div>
+    <div class="feed-amount compra">${fmt(c.total)}</div>
+  </div>`).join('');
+}
+
+function updateFeedGastos() {
+  const feed = document.getElementById('feed-gastos');
+  const cats = document.getElementById('gastos-categorias');
+  if (state.gastos.length === 0) {
+    feed.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><div>Sin gastos registrados.</div></div>';
+    cats.innerHTML = '<div class="empty-state"><div class="emoji">💸</div><div>Sin gastos registrados.</div></div>';
+    return;
+  }
+  const bycat = {};
+  state.gastos.forEach(g => { if (!bycat[g.categoria]) bycat[g.categoria] = 0; bycat[g.categoria] += g.monto; });
+  const totalG = state.gastos.reduce((s,g)=>s+g.monto,0);
+  cats.innerHTML = Object.entries(bycat).sort((a,b)=>b[1]-a[1]).map(([cat,monto]) => `<div class="report-block" style="margin-bottom:8px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:13px;font-weight:600;">${CATEGORIAS_ICON[cat]||'📌'} ${cat}</span>
+      <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent);">${fmt(monto)}</span>
+    </div>
+    <div class="margen-bar" style="margin-top:8px;"><div class="margen-fill" style="width:${(monto/totalG*100).toFixed(0)}%;background:var(--accent);"></div></div>
+  </div>`).join('');
+  feed.innerHTML = [...state.gastos].reverse().map(g => `<div class="feed-item">
+    <div class="feed-icon gasto">${CATEGORIAS_ICON[g.categoria]||'📌'}</div>
+    <div class="feed-body"><div class="feed-name">${g.concepto}</div><div class="feed-meta">${g.categoria} · ${g.hora}</div></div>
+    <div class="feed-amount gasto">${fmt(g.monto)}</div>
+  </div>`).join('');
+}
+
+function updateVentasPage() {
+  const vendGrid = document.getElementById('vend-grid');
+  const prodList = document.getElementById('ventas-productos-list');
+  if (state.ventas.length === 0) {
+    vendGrid.innerHTML = '<div class="empty-state"><div class="emoji">📤</div><div>Carga el archivo de Ruttas para ver ventas.</div></div>';
+    prodList.innerHTML = '<div class="empty-state" style="padding:20px">Sin datos cargados.</div>';
+    return;
+  }
+  const byVend = {};
+  state.ventas.forEach(v => {
+    if (!byVend[v.vendedor]) byVend[v.vendedor] = { total:0, uds:0, clientes:new Set() };
+    byVend[v.vendedor].total += v.total; byVend[v.vendedor].uds += v.cantidad; byVend[v.vendedor].clientes.add(v.cliente);
+  });
+  const totalV = state.ventas.reduce((s,v)=>s+v.total,0);
+  vendGrid.innerHTML = Object.entries(byVend).sort((a,b)=>b[1].total-a[1].total).map(([vend,d]) => `<div class="vend-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;"><div class="vend-name">👤 ${vend}</div><span class="badge badge-green">${(d.total/totalV*100).toFixed(0)}%</span></div>
+    <div class="vend-stats">
+      <div class="vend-stat"><div class="vend-stat-val" style="color:var(--blue)">${fmt(d.total)}</div><div class="vend-stat-lbl">Ventas</div></div>
+      <div class="vend-stat"><div class="vend-stat-val" style="color:var(--gold)">${Math.round(d.uds).toLocaleString('es-CO')}</div><div class="vend-stat-lbl">Unidades</div></div>
+      <div class="vend-stat"><div class="vend-stat-val" style="color:var(--green)">${d.clientes.size}</div><div class="vend-stat-lbl">Clientes</div></div>
+    </div>
+    <div class="margen-bar" style="margin-top:10px;"><div class="margen-fill" style="width:${(d.total/totalV*100).toFixed(0)}%;"></div></div>
+  </div>`).join('');
+  const byProd = {};
+  state.ventas.forEach(v => { if (!byProd[v.producto]) byProd[v.producto] = { uds:0, total:0 }; byProd[v.producto].uds += v.cantidad; byProd[v.producto].total += v.total; });
+  prodList.innerHTML = Object.entries(byProd).sort((a,b) => b[1].total - a[1].total).slice(0, 20).map(([prod, d]) => `<div class="ventas-row"><span class="ventas-prod">${prod}</span><span class="ventas-qty">${Math.round(d.uds)}</span><span class="ventas-total">${fmt(d.total)}</span></div>`).join('');
+}
+
+function updateReporte() {
+  const t = getTotales();
+  const cxp = getCXPTotales();
+  document.getElementById('rep-ventas-brutas').textContent = fmt(t.totalVentas);
+  document.getElementById('rep-uds').textContent = Math.round(t.totalUds).toLocaleString('es-CO');
+  document.getElementById('rep-clientes').textContent = t.clientes;
+  document.getElementById('rep-productos').textContent = t.productos;
+  document.getElementById('rep-v2').textContent = fmt(t.totalVentas);
+  document.getElementById('rep-costo').textContent = '-' + fmt(t.costoVentas);
+  document.getElementById('rep-gastos-tot').textContent = '-' + fmt(t.totalGastos);
+  const utilNeta = t.totalVentas - t.costoVentas - t.totalGastos;
+  const repUtil = document.getElementById('rep-utilidad-neta');
+  repUtil.textContent = fmt(utilNeta);
+  repUtil.style.color = utilNeta >= 0 ? 'var(--green)' : 'var(--accent)';
+  document.getElementById('rep-compras-tot').textContent = fmt(t.totalCompras);
+  document.getElementById('rep-compras-n').textContent = state.compras.length;
+  document.getElementById('rep-cxp-tot').textContent = fmt(cxp.total);
+  document.getElementById('rep-cxp-vence').textContent = cxp.nVenceSemana;
+}
+
+function exportReporte() {
+  const t = getTotales();
+  const cxp = getCXPTotales();
+  const fecha = new Date(state.currentDateKey + 'T00:00:00').toLocaleDateString('es-CO', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const texto = `
+📊 *INCO LEAL — REPORTE DEL DÍA*
+${fecha}
+━━━━━━━━━━━━━━━━━━━━━━
+💰 *VENTAS*
+• Total ventas: ${fmt(t.totalVentas)}
+• Unidades: ${Math.round(t.totalUds).toLocaleString('es-CO')}
+• Clientes: ${t.clientes}
+
+📈 *RENTABILIDAD*
+• Costo ventas: ${fmt(t.costoVentas)}
+• Gastos: ${fmt(t.totalGastos)}
+• *Utilidad neta est.: ${fmt(t.totalVentas - t.costoVentas - t.totalGastos)}*
+• Margen: ${t.margen.toFixed(1)}%
+
+🛒 *COMPRAS*
+• Total invertido: ${fmt(t.totalCompras)}
+• Entradas: ${state.compras.length}
+
+🏭 *CUENTAS POR PAGAR*
+• Total pendiente: ${fmt(cxp.total)}
+• Vencen esta semana: ${cxp.nVenceSemana} factura(s)
+━━━━━━━━━━━━━━━━━━━━━━
+_Generado desde Inco Leal App_
+  `.trim();
+  if (navigator.share) { navigator.share({ text: texto }); }
+  else { navigator.clipboard.writeText(texto).then(() => showToast('📋 Reporte copiado al portapapeles')); }
+}
+
+init();
+</script>
+</body>
+</html>
